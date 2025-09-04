@@ -1,53 +1,74 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import api from "../api/axios";
+import React, { useCallback, useState } from "react";
+import { useNavigate, Link } from "react-router-dom";
+import api from "@/api/axios";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
 
-function Login() {
+function LoginInner() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPw, setShowPw] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const navigate = useNavigate();
 
-  const handleSubmit = async (e) => {
+  const onSubmit = useCallback(async (e) => {
     e.preventDefault();
     setError("");
+    setSubmitting(true);
     try {
-      const res = await api.post("/auth/login", { email, password });
-      // Save token/user info to localStorage or context (implement as needed)
-      localStorage.setItem("token", res.data.token);
+      const { data } = await api.post("/auth/login", { email, password });
+      localStorage.setItem("token", data.token);
       navigate("/");
     } catch (err) {
-      setError(err.response?.data?.message || "Login failed");
+      setError(err?.response?.data?.message || "Login failed. Try again.");
+    } finally {
+      setSubmitting(false);
     }
-  };
+  }, [email, password, navigate]);
 
   return (
-    <div className="max-w-md mx-auto mt-16">
-      <h2 className="text-2xl font-bold mb-4">Sign In</h2>
-      {error && <div className="bg-red-100 text-red-700 p-2 mb-2 rounded">{error}</div>}
-      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-        <input
-          type="email"
-          placeholder="Email"
-          className="border p-2 rounded"
-          value={email}
-          onChange={e => setEmail(e.target.value)}
-          required
-        />
-        <input
-          type="password"
-          placeholder="Password"
-          className="border p-2 rounded"
-          value={password}
-          onChange={e => setPassword(e.target.value)}
-          required
-        />
-        <button type="submit" className="bg-blue-800 text-white font-bold py-2 px-4 rounded">
-          Login
-        </button>
-      </form>
+    <div className="mx-auto max-w-md px-4 py-12 sm:px-6 lg:px-8">
+      <Card>
+        <CardHeader>
+          <CardTitle>Sign in</CardTitle>
+          <CardDescription>Enter your credentials to continue.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {error && (
+            <div className="mb-4 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/50 dark:text-red-300">
+              {error}
+            </div>
+          )}
+          <form onSubmit={onSubmit} className="space-y-5">
+            <div>
+              <label htmlFor="email" className="mb-1 block text-sm font-medium text-muted-foreground">
+                Email
+              </label>
+              <Input id="email" type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} required placeholder="you@example.com" />
+            </div>
+            <div>
+              <div className="mb-1 flex items-center justify-between">
+                <label htmlFor="password" className="block text-sm font-medium text-muted-foreground">
+                  Password
+                </label>
+                <button type="button" className="text-xs text-primary hover:underline" onClick={() => setShowPw((v) => !v)}>
+                  {showPw ? "Hide" : "Show"}
+                </button>
+              </div>
+              <Input id="password" type={showPw ? "text" : "password"} autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} required placeholder="••••••••" />
+            </div>
+            <Button className="w-full" disabled={submitting}>{submitting ? "Signing in..." : "Sign In"}</Button>
+          </form>
+        </CardContent>
+        <CardFooter className="text-sm text-muted-foreground">
+          Don’t have an account?
+          <Link to="/register" className="ml-1 text-primary hover:underline">Sign up</Link>
+        </CardFooter>
+      </Card>
     </div>
   );
 }
 
-export default Login;
+export default React.memo(LoginInner);

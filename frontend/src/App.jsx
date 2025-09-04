@@ -1,24 +1,29 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import Navbar from "./components/Navbar";
+import RootLayout from "./layouts/RootLayout";
 import About from "./pages/About";
 import Login from "./pages/Login";
-import Register from "./pages/Register";
-import { useState } from "react";
+import Register from "./pages/Register"; // create similarly styled form page
+import { useEffect, useState } from "react";
 
 function App() {
-  // Replace with context/provider logic in a real app
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(!!localStorage.getItem("token"));
   const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    const handler = () => setIsAuthenticated(!!localStorage.getItem("token"));
+    window.addEventListener("storage", handler);
+    return () => window.removeEventListener("storage", handler);
+  }, []);
 
   return (
     <BrowserRouter>
-      <Navbar isAuthenticated={isAuthenticated} user={user} />
-      <Routes>
-        <Route path="/" element={<About />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
-        {/* More routes later */}
-      </Routes>
+      <RootLayout isAuthenticated={isAuthenticated} user={user}>
+        <Routes>
+          <Route path="/" element={<About />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+        </Routes>
+      </RootLayout>
     </BrowserRouter>
   );
 }
