@@ -1,9 +1,11 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { Routes, Route } from "react-router-dom";
 import RootLayout from "./layouts/RootLayout";
 import About from "./pages/About";
 import Login from "./pages/Login";
-import Register from "./pages/Register"; // create similarly styled form page
+import Register from "./pages/Register";
 import { useEffect, useState } from "react";
+import Discover from '@/pages/Discover';
+import Home from '@/pages/Home';
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(!!localStorage.getItem("token"));
@@ -16,15 +18,15 @@ function App() {
   }, []);
 
   return (
-    <BrowserRouter>
-      <RootLayout isAuthenticated={isAuthenticated} user={user}>
-        <Routes>
-          <Route path="/" element={<About />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-        </Routes>
-      </RootLayout>
-    </BrowserRouter>
+    <RootLayout isAuthenticated={isAuthenticated} user={user}>
+      <Routes>
+        <Route path="/" element={<Home />} />
+        {/* <Route path="/" element={<About />} /> */}
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+        <Route path="/discover" element={<Discover />} />
+      </Routes>
+    </RootLayout>
   );
 }
 

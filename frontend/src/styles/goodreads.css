@@ -1,0 +1,17 @@
+:root {
+  --gr-bg: #f4f1ea;
+  --gr-border: #d6d0c4;
+  --gr-text: #382110;
+  --gr-accent: #00635d;
+  --gr-accent-alt: #409d69;
+}
+
+body {
+  background: var(--gr-bg);
+  color: var(--gr-text);
+  font-feature-settings: "kern";
+}
+
+.font-serif {
+  font-family: Georgia, "Times New Roman", Times, serif;
+}

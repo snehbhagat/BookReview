@@ -1,0 +1,48 @@
+:root {
+  color-scheme: light;
+  --gr-bg: #f4f1ea;
+  --gr-bg-alt: #fffdfa;
+  --gr-border: #d6d0c4;
+  --gr-text: #382110;
+  --gr-text-soft: #5a4634;
+  --gr-accent: #00635d;
+  --gr-accent-hover: #045f59;
+  --gr-accent-contrast: #ffffff;
+  --gr-shadow: 0 1px 2px rgba(0,0,0,0.06), 0 2px 4px rgba(0,0,0,0.04);
+  --gr-skeleton: linear-gradient(90deg,#e8e2d4 0%,#f2ede3 50%,#e8e2d4 100%);
+}
+
+.dark {
+  color-scheme: dark;
+  --gr-bg: #1e1b17;
+  --gr-bg-alt: #26221d;
+  --gr-border: #3a342d;
+  --gr-text: #f4ede4;
+  --gr-text-soft: #c9bfb2;
+  --gr-accent: #3bb398;
+  --gr-accent-hover: #34a28a;
+  --gr-accent-contrast: #0d1b17;
+  --gr-shadow: 0 2px 4px rgba(0,0,0,0.6);
+  --gr-skeleton: linear-gradient(90deg,#3a342d 0%,#473f37 50%,#3a342d 100%);
+}
+
+html, body {
+  background: var(--gr-bg);
+  color: var(--gr-text);
+}
+
+.dark img {
+  filter: saturate(0.92);
+}
+
+.skeleton-shimmer {
+  background: #e8e2d4;
+  background-image: var(--gr-skeleton);
+  background-size: 200% 100%;
+  animation: shimmer 1.25s linear infinite;
+}
+
+@keyframes shimmer {
+  0% { background-position: 0% 50% }
+  100% { background-position: -200% 50% }
+}

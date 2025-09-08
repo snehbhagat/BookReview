@@ -4,6 +4,7 @@ import api from "@/api/axios";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
+import GoogleSignIn from "@/components/auth/GoogleSignIn";
 
 function LoginInner() {
   const [email, setEmail] = useState("");
@@ -28,6 +29,24 @@ function LoginInner() {
     }
   }, [email, password, navigate]);
 
+  // ADD: Google Sign-In handler (non-breaking)
+  const onGoogleSuccess = useCallback(
+    async (credential) => {
+      try {
+        setSubmitting(true);
+        setError("");
+        const { data } = await api.post("/auth/oauth/google", { credential });
+        localStorage.setItem("token", data.token);
+        navigate("/");
+      } catch (err) {
+        setError(err?.response?.data?.message || "Google sign-in failed. Try again.");
+      } finally {
+        setSubmitting(false);
+      }
+    },
+    [navigate]
+  );
+
   return (
     <div className="mx-auto max-w-md px-4 py-12 sm:px-6 lg:px-8">
       <Card>
@@ -41,6 +60,27 @@ function LoginInner() {
               {error}
             </div>
           )}
+
+          {/* ADD: Google Sign-In button (keeps your existing form) */}
+          <div className="mb-5">
+            <GoogleSignIn
+              onSuccess={onGoogleSuccess}
+              onError={(e) => setError(e?.message || "Google sign-in failed")}
+              oneTap={true}
+            />
+          </div>
+
+          {/* Divider */}
+          <div className="relative my-5">
+            <div className="absolute inset-0 flex items-center">
+              <span className="w-full border-t" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-background px-2 text-muted-foreground">Or continue with</span>
+            </div>
+          </div>
+
+          {/* EXISTING email/password form (unchanged) */}
           <form onSubmit={onSubmit} className="space-y-5">
             <div>
               <label htmlFor="email" className="mb-1 block text-sm font-medium text-muted-foreground">

@@ -10,10 +10,10 @@ const { redis } = require('./lib/redis');
 const { errorHandler } = require('./middleware/error');
 const authRoutes = require('./routes/auth');
 const bookRoutes = require('./routes/books');
+const openLibraryRoutes = require('./routes/openLibrary'); // ADD
 
 const app = express();
 
-// Security & parsing
 app.use(helmet());
 app.use(cors({ origin: process.env.CORS_ORIGIN || true, credentials: true }));
 app.use(express.json());
@@ -26,7 +26,6 @@ app.use(
   })
 );
 
-// Health check
 app.get('/health', async (req, res) => {
   try {
     const redisPing = await redis.ping();
@@ -41,11 +40,11 @@ app.get('/health', async (req, res) => {
   }
 });
 
-// Routes
 app.use('/api/auth', authRoutes);
+app.use('/auth', authRoutes); // existing alias
 app.use('/api/books', bookRoutes);
+app.use('/api/open', openLibraryRoutes); // ADD
 
-// Error handler
 app.use(errorHandler);
 
 const port = process.env.PORT || 4000;
