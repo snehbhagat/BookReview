@@ -11,6 +11,7 @@ const { errorHandler } = require('./middleware/error');
 const authRoutes = require('./routes/auth');
 const bookRoutes = require('./routes/books');
 const openLibraryRoutes = require('./routes/openLibrary'); // ADD
+const nytRoutes = require('./routes/nyt'); // ADD
 
 const app = express();
 
@@ -44,6 +45,7 @@ app.use('/api/auth', authRoutes);
 app.use('/auth', authRoutes); // existing alias
 app.use('/api/books', bookRoutes);
 app.use('/api/open', openLibraryRoutes); // ADD
+app.use('/api/nyt', nytRoutes); // ADD
 
 app.use(errorHandler);
 

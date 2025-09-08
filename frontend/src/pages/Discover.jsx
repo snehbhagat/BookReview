@@ -2,9 +2,12 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { searchOpenLibrary, fetchOpenBookDetails } from '@/api/openLibrary';
 import OpenWorkCard from '@/components/books/OpenWorkCard';
 
+// Optional quick suggestions (can be edited or removed)
+const SUGGESTIONS = ['fantasy', 'mystery', 'science fiction', 'romance', 'history', 'non fiction'];
+
 export default function Discover() {
-  const [q, setQ] = useState('harry potter');
-  const [inputQ, setInputQ] = useState('harry potter');
+  const [q, setQ] = useState('');          // START EMPTY
+  const [inputQ, setInputQ] = useState(''); // Controlled input
   const [page, setPage] = useState(1);
   const [limit] = useState(20);
   const [items, setItems] = useState([]);
@@ -14,19 +17,22 @@ export default function Discover() {
   const [error, setError] = useState('');
   const [selected, setSelected] = useState(null);
   const dialogRef = useRef(null);
+  const firstSearchDone = useRef(false); // track if user initiated a search at least once
 
   const performSearch = useCallback(async (opts = {}) => {
     const { reset = false, pageOverride } = opts;
-    if (!q.trim()) return;
+    if (!q.trim()) return; // no empty queries
     if (reset) {
       setItems([]);
       setPage(1);
     }
     const targetPage = pageOverride || (reset ? 1 : page);
     try {
-      if (targetPage === 1 && !reset) { /* no-op */ }
-      if (targetPage === 1 && reset) setLoading(true);
-      else setLoadingMore(true);
+      if (targetPage === 1) {
+        setLoading(true);
+      } else {
+        setLoadingMore(true);
+      }
       setError('');
       const data = await searchOpenLibrary({ q, page: targetPage, limit });
       setTotalPages(data.totalPages);
@@ -43,15 +49,24 @@ export default function Discover() {
     }
   }, [q, page, limit]);
 
-  // initial
+  // Only trigger when q changes AFTER a search has been initiated
   useEffect(() => {
+    if (!q.trim()) return;
     performSearch({ reset: true, pageOverride: 1 });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [q]);
 
   const onSubmit = (e) => {
     e.preventDefault();
-    setQ(inputQ);
+    if (!inputQ.trim()) return;
+    firstSearchDone.current = true;
+    setQ(inputQ.trim());
+  };
+
+  const onSuggestion = (s) => {
+    setInputQ(s);
+    firstSearchDone.current = true;
+    setQ(s);
   };
 
   const loadMore = () => {
@@ -64,7 +79,6 @@ export default function Discover() {
   const openDetails = async (work) => {
     setSelected({ loading: true, work });
     try {
-      // prefer isbn for details
       let details = null;
       if (work.isbn13) {
         details = await fetchOpenBookDetails({ isbn: work.isbn13 });
@@ -85,6 +99,8 @@ export default function Discover() {
     setSelected(null);
   };
 
+  const showEmptyState = !firstSearchDone.current && !loading && items.length === 0;
+
   return (
     <div className="min-h-screen bg-[#f4f1ea] text-[#382110]">
       <div className="mx-auto max-w-6xl px-4 py-8">
@@ -97,7 +113,7 @@ export default function Discover() {
             type="text"
             value={inputQ}
             onChange={e => setInputQ(e.target.value)}
-            placeholder="Search Open Library..."
+            placeholder="Search Open Library (e.g. dune, agatha christie, philosophy)..."
             className="flex-1 rounded-md border border-[#d6d0c4] bg-[#fffdfa] px-3 py-2 text-sm focus:border-emerald-600 focus:ring-emerald-600 outline-none"
           />
           <button
@@ -107,6 +123,28 @@ export default function Discover() {
             Search
           </button>
         </form>
+
+        {showEmptyState && (
+            <div className="mb-10 rounded-md border border-[#d6d0c4] bg-white p-6 shadow-sm">
+              <p className="text-sm text-[#5a4634]">
+                Start exploring the Open Library collection. Try a genre, an author, or a topic.
+              </p>
+              {SUGGESTIONS.length > 0 && (
+                <div className="mt-4 flex flex-wrap gap-2">
+                  {SUGGESTIONS.map(s => (
+                    <button
+                      key={s}
+                      type="button"
+                      onClick={() => onSuggestion(s)}
+                      className="rounded-full border border-emerald-600/60 bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-700 hover:bg-emerald-100 transition"
+                    >
+                      {s}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+        )}
 
         {error && (
           <div className="mb-4 rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700">
@@ -122,7 +160,7 @@ export default function Discover() {
           </div>
         )}
 
-        {!loading && (
+        {!loading && items.length > 0 && (
           <>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
               {items.map(item => (

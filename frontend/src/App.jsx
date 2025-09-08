@@ -6,6 +6,8 @@ import Register from "./pages/Register";
 import { useEffect, useState } from "react";
 import Discover from '@/pages/Discover';
 import Home from '@/pages/Home';
+import BestSellersOverview from '@/pages/BestSellerOverview';
+import BestSellerListPage from '@/pages/BestSellerListPage';
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(!!localStorage.getItem("token"));
@@ -25,6 +27,8 @@ function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/discover" element={<Discover />} />
+        <Route path="/best-sellers" element={<BestSellersOverview />} />
+        <Route path="/best-sellers/list" element={<BestSellerListPage />} />
       </Routes>
     </RootLayout>
   );

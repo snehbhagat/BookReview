@@ -46,3 +46,7 @@ html, body {
   0% { background-position: 0% 50% }
   100% { background-position: -200% 50% }
 }
+/* Add this near the top or bottom (after variables) */
+html, body {
+  overflow-x: hidden;
+}
