@@ -1,84 +1,133 @@
-import React, { useEffect, useRef, useState } from 'react';
-import useDebounce from '@/hooks/useDebounce';
-import { searchOpenLibrary } from '@/api/openLibrary';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useRef, useEffect } from 'react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
+import DarkModeToggle from '@/components/common/DarkModeToggle';
+import SearchSuggest from './SearchSuggest';
 
-/**
- * Props:
- *  term: string
- *  onSelect: (q) => void
- *  open: boolean
- */
-export default function SearchSuggest({ term, open, onSelect }) {
-  const debounced = useDebounce(term, 300);
-  const [results, setResults] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const ref = useRef(null);
+export default function Navbar() {
+  const [term, setTerm] = useState('');
+  const [showSuggest, setShowSuggest] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
+  const inputRef = useRef(null);
 
   useEffect(() => {
-    let active = true;
-    if (!debounced.trim()) {
-      setResults([]);
-      return;
-    }
-    (async () => {
-      try {
-        setLoading(true);
-        const data = await searchOpenLibrary({ q: debounced, page: 1, limit: 5 });
-        if (active) {
-          setResults(data.items || []);
-        }
-      } catch {
-        if (active) setResults([]);
-      } finally {
-        if (active) setLoading(false);
-      }
-    })();
-    return () => { active = false; };
-  }, [debounced]);
+    // hide suggestions when route changes
+    setShowSuggest(false);
+  }, [location]);
 
-  if (!open || !term.trim()) return null;
+  const onSearch = (e) => {
+    e.preventDefault();
+    const q = term.trim();
+    if (!q) return;
+    navigate(`/discover?q=${encodeURIComponent(q)}`);
+    setShowSuggest(false);
+  };
 
   return (
-    <div
-      ref={ref}
-      className="absolute z-50 mt-1 w-full rounded-md border border-[var(--gr-border)] bg-white dark:bg-[var(--gr-bg-alt)] shadow-md"
-      role="listbox"
-      aria-label="Search suggestions"
+    <header
+      className="fixed inset-x-0 top-0 z-40 border-b border-[var(--gr-border)] bg-[var(--gr-bg-alt)]/95 backdrop-blur"
+      role="banner"
     >
-      {loading && (
-        <div className="p-3 text-xs text-[var(--gr-text-soft)]">Searching...</div>
-      )}
-      {!loading && results.length === 0 && (
-        <div className="p-3 text-xs text-[var(--gr-text-soft)]">No quick matches</div>
-      )}
-      <ul className="max-h-72 overflow-y-auto text-sm">
-        {results.map(r => (
-          <li
-            key={r.id + (r.isbn13 || r.olid || '')}
-            className="cursor-pointer px-3 py-2 hover:bg-emerald-50 dark:hover:bg-emerald-900/30"
-            onClick={() => {
-              onSelect(r.title);
-              navigate(`/discover?q=${encodeURIComponent(r.title)}`);
-            }}
-            role="option"
-          >
-            <p className="line-clamp-1 font-medium text-[var(--gr-text)]">{r.title}</p>
-            <p className="text-[11px] uppercase tracking-wide text-[var(--gr-accent)]">
-              {r.authors?.[0] || 'Unknown'}
-            </p>
-          </li>
-        ))}
-      </ul>
-      <div className="border-t border-[var(--gr-border)] p-2">
-        <button
-          className="w-full rounded bg-[var(--gr-bg-alt)] px-2 py-1 text-xs font-medium text-[var(--gr-accent)] hover:underline"
-          onClick={() => navigate(`/discover?q=${encodeURIComponent(term)}`)}
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-3 focus:rounded-md focus:bg-emerald-600 focus:px-3 focus:py-1 focus:text-white"
+      >
+        Skip to main content
+      </a>
+      <div className="mx-auto flex h-16 max-w-7xl items-center gap-6 px-4">
+        <Link
+          to="/"
+          className="flex items-center gap-2 font-serif text-xl font-semibold text-[var(--gr-text)]"
+          aria-label="BookReview home"
         >
-          See full results
-        </button>
+          <span className="inline-block rounded bg-emerald-600 px-2 py-1 text-sm font-bold tracking-wide text-white">
+            BR
+          </span>
+          <span className="hidden sm:inline">BookReview</span>
+        </Link>
+
+        <nav
+          className="hidden md:flex items-center gap-6 text-sm font-medium text-[var(--gr-text)]"
+          aria-label="Primary navigation"
+        >
+          <Link to="/" className="hover:text-emerald-700">Home</Link>
+          <Link to="/discover" className="hover:text-emerald-700">Browse</Link>
+          <Link to="/my-reviews" className="hover:text-emerald-700">My Reviews</Link>
+          <Link to="/genres" className="hover:text-emerald-700">Genres</Link>
+          <Link to="/login" className="hover:text-emerald-700">Login/Signup</Link>
+        </nav>
+
+        <form
+          onSubmit={onSearch}
+          className="ml-auto hidden lg:block w-full max-w-sm relative"
+          role="search"
+          aria-label="Quick book search"
+        >
+          <div className="relative w-full">
+            <input
+              ref={inputRef}
+              value={term}
+              onChange={(e) => { setTerm(e.target.value); setShowSuggest(true); }}
+              onFocus={() => term && setShowSuggest(true)}
+              onKeyDown={(e) => {
+                if (e.key === 'Escape') {
+                  setShowSuggest(false);
+                  inputRef.current?.blur();
+                }
+              }}
+              placeholder="Search books or authors..."
+              className="w-full rounded-md border border-[var(--gr-border)] bg-[var(--gr-bg-alt)] px-3 py-2 text-sm outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600"
+              aria-expanded={showSuggest}
+              aria-controls="search-suggestions"
+              aria-autocomplete="list"
+            />
+            <button
+              type="submit"
+              className="absolute inset-y-0 right-0 px-3 text-sm font-medium text-emerald-700 hover:underline"
+            >
+              Go
+            </button>
+            <SearchSuggest
+              term={term}
+              open={showSuggest}
+              onSelect={(val) => {
+                setTerm(val);
+                setShowSuggest(false);
+              }}
+            />
+          </div>
+        </form>
+
+        <div className="ml-auto lg:ml-0 flex items-center gap-3">
+          <DarkModeToggle />
+          {/* Accessible placeholder profile menu */}
+          <div className="relative group">
+            <button
+              aria-haspopup="menu"
+              aria-expanded="false"
+              className="flex h-9 w-9 items-center justify-center rounded-full bg-emerald-600/10 text-sm font-semibold text-emerald-700"
+              title="User menu placeholder"
+            >
+              U
+            </button>
+            <div
+              className="invisible absolute right-0 top-full mt-2 w-48 rounded-md border border-[var(--gr-border)] bg-[var(--gr-bg-alt)] p-2 text-sm opacity-0 shadow-md transition group-hover:visible group-hover:opacity-100"
+              role="menu"
+              aria-label="User menu"
+            >
+              <p className="px-2 py-1 text-[var(--gr-text-soft)]">Profile (placeholder)</p>
+              <button className="w-full rounded px-2 py-1 text-left hover:bg-emerald-50 dark:hover:bg-emerald-900/30" role="menuitem">Dashboard</button>
+              <button className="w-full rounded px-2 py-1 text-left hover:bg-emerald-50 dark:hover:bg-emerald-900/30" role="menuitem">Logout</button>
+            </div>
+          </div>
+          <button
+            className="md:hidden rounded-md border border-[var(--gr-border)] bg-[var(--gr-bg-alt)] px-3 py-1 text-sm font-medium text-[var(--gr-text)]"
+            onClick={() => navigate('/discover')}
+          >
+            Browse
+          </button>
+        </div>
       </div>
-    </div>
+    </header>
   );
 }

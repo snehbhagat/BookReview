@@ -1,4 +1,4 @@
-import Navbar from "../components/navbar";
+import Navbar from "../components/home/Navbar";
 import { Toaster } from "react-hot-toast";
 
 export default function RootLayout({ children, isAuthenticated, user }) {
