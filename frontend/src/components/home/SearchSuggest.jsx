@@ -1,16 +1,10 @@
 import React, { useEffect, useRef, useState } from 'react';
 import useDebounce from '@/hooks/useDebounce';
-import { searchOpenLibrary } from '@/api/openLibrary';
+import { searchGoogleBooks } from '@/api/googleBooks';
 import { useNavigate } from 'react-router-dom';
 
-/**
- * Props:
- *  term: string
- *  onSelect: (q) => void
- *  open: boolean
- */
 export default function SearchSuggest({ term, open, onSelect }) {
-  const debounced = useDebounce(term, 300);
+  const debounced = useDebounce(term, 250);
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
   const ref = useRef(null);
@@ -25,10 +19,9 @@ export default function SearchSuggest({ term, open, onSelect }) {
     (async () => {
       try {
         setLoading(true);
-        const data = await searchOpenLibrary({ q: debounced, page: 1, limit: 5 });
-        if (active) {
-          setResults(data.items || []);
-        }
+        // Support operators like intitle:, inauthor:, subject:, isbn:
+        const data = await searchGoogleBooks({ q: debounced, maxResults: 6 });
+        if (active) setResults(data.items || []);
       } catch {
         if (active) setResults([]);
       } finally {
@@ -53,21 +46,30 @@ export default function SearchSuggest({ term, open, onSelect }) {
       {!loading && results.length === 0 && (
         <div className="p-3 text-xs text-[var(--gr-text-soft)]">No quick matches</div>
       )}
-      <ul className="max-h-72 overflow-y-auto text-sm">
+      <ul className="max-h-80 overflow-y-auto text-sm">
         {results.map(r => (
           <li
-            key={r.id + (r.isbn13 || r.olid || '')}
+            key={r.id}
             className="cursor-pointer px-3 py-2 hover:bg-emerald-50 dark:hover:bg-emerald-900/30"
             onClick={() => {
-              onSelect(r.title);
-              navigate(`/discover?q=${encodeURIComponent(r.title)}`);
+              onSelect?.(r.title);
+              navigate(`/book/${encodeURIComponent(r.id)}`);
             }}
             role="option"
           >
-            <p className="line-clamp-1 font-medium text-[var(--gr-text)]">{r.title}</p>
-            <p className="text-[11px] uppercase tracking-wide text-[var(--gr-accent)]">
-              {r.authors?.[0] || 'Unknown'}
-            </p>
+            <div className="flex items-start gap-2">
+              <div className="h-10 w-7 overflow-hidden rounded bg-[var(--gr-bg)] shrink-0">
+                {r.thumbnail ? (
+                  <img src={r.thumbnail} alt="" className="h-full w-full object-cover" loading="lazy" />
+                ) : null}
+              </div>
+              <div className="min-w-0">
+                <p className="line-clamp-1 font-medium text-[var(--gr-text)]">{r.title}</p>
+                <p className="text-[11px] uppercase tracking-wide text-[var(--gr-accent)]">
+                  {r.authors?.[0] || 'Unknown'}
+                </p>
+              </div>
+            </div>
           </li>
         ))}
       </ul>
@@ -76,7 +78,7 @@ export default function SearchSuggest({ term, open, onSelect }) {
           className="w-full rounded bg-[var(--gr-bg-alt)] px-2 py-1 text-xs font-medium text-[var(--gr-accent)] hover:underline"
           onClick={() => navigate(`/discover?q=${encodeURIComponent(term)}`)}
         >
-          See full results
+          See Open Library results
         </button>
       </div>
     </div>

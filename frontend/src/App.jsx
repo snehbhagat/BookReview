@@ -8,6 +8,7 @@ import Discover from '@/pages/Discover';
 import Home from '@/pages/Home';
 import BestSellersOverview from '@/pages/BestSellerOverview';
 import BestSellerListPage from '@/pages/BestSellerListPage';
+import BookDetail from '@/pages/BookDetail';
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(!!localStorage.getItem("token"));
@@ -29,6 +30,7 @@ function App() {
         <Route path="/discover" element={<Discover />} />
         <Route path="/best-sellers" element={<BestSellersOverview />} />
         <Route path="/best-sellers/list" element={<BestSellerListPage />} />
+        <Route path="/book/:id" element={<BookDetail />} />
       </Routes>
     </RootLayout>
   );

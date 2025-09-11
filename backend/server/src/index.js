@@ -12,6 +12,7 @@ const authRoutes = require('./routes/auth');
 const bookRoutes = require('./routes/books');
 const openLibraryRoutes = require('./routes/openLibrary'); // ADD
 const nytRoutes = require('./routes/nyt'); // ADD
+const googleBooksRoutes = require('./routes/googleBooks');
 
 const app = express();
 
@@ -43,6 +44,7 @@ app.get('/health', async (req, res) => {
 
 app.use('/api/auth', authRoutes);
 app.use('/auth', authRoutes); // existing alias
+app.use('/api/books', googleBooksRoutes); // ADD
 app.use('/api/books', bookRoutes);
 app.use('/api/open', openLibraryRoutes); // ADD
 app.use('/api/nyt', nytRoutes); // ADD
