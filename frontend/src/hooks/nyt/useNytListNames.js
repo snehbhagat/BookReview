@@ -1,26 +1,61 @@
 import { useEffect, useState } from 'react';
 import { fetchNytListNames } from '@/api/nyt';
 
+let LIST_NAMES_CACHE = null;
+let LIST_NAMES_PROMISE = null;
+let LIST_NAMES_ERROR = null;
+let LAST_FETCH = 0;
+const TTL_MS = 2 * 60 * 60 * 1000; // 2h align with backend
+
 export function useNytListNames() {
-  const [data, setData] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [data, setData] = useState(LIST_NAMES_CACHE);
+  const [error, setError] = useState(LIST_NAMES_ERROR ? LIST_NAMES_ERROR.message : '');
+  const [loading, setLoading] = useState(!LIST_NAMES_CACHE);
 
   useEffect(() => {
-    let active = true;
-    (async () => {
+    const now = Date.now();
+    const expired = !LAST_FETCH || (now - LAST_FETCH) > TTL_MS;
+
+    if (LIST_NAMES_CACHE && !expired) {
+      setData(LIST_NAMES_CACHE);
+      setLoading(false);
+      return;
+    }
+    if (LIST_NAMES_PROMISE) {
+      setLoading(true);
+      LIST_NAMES_PROMISE.then(
+        res => setData(res),
+        err => setError(err.message || 'Failed to load list names')
+      ).finally(() => setLoading(false));
+      return;
+    }
+
+    LIST_NAMES_PROMISE = (async () => {
       try {
-        setLoading(true);
         const res = await fetchNytListNames();
-        if (active) setData(res);
+        LIST_NAMES_CACHE = res;
+        LIST_NAMES_ERROR = null;
+        LAST_FETCH = Date.now();
+        return res;
       } catch (e) {
-        if (active) setError(e.message || 'Failed to load list names');
+        LIST_NAMES_ERROR = e;
+        throw e;
       } finally {
-        if (active) setLoading(false);
+        LIST_NAMES_PROMISE = null;
       }
     })();
-    return () => { active = false; };
+
+    setLoading(true);
+    LIST_NAMES_PROMISE.then(
+      res => setData(res),
+      err => setError(err.message || 'Failed to load list names')
+    ).finally(() => setLoading(false));
   }, []);
 
-  return { data, listNames: data?.listNames || [], loading, error };
+  return {
+    data,
+    listNames: data?.listNames || [],
+    loading,
+    error
+  };
 }

@@ -13,6 +13,7 @@ const bookRoutes = require('./routes/books');
 const openLibraryRoutes = require('./routes/openLibrary'); // ADD
 const nytRoutes = require('./routes/nyt'); // ADD
 const googleBooksRoutes = require('./routes/googleBooks');
+const { warmNYT } = require('./utils/warmNyt');
 
 const app = express();
 
@@ -48,6 +49,7 @@ app.use('/api/books', googleBooksRoutes); // ADD
 app.use('/api/books', bookRoutes);
 app.use('/api/open', openLibraryRoutes); // ADD
 app.use('/api/nyt', nytRoutes); // ADD
+
 
 app.use(errorHandler);
 
