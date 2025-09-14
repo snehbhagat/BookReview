@@ -24,12 +24,12 @@ export default function PasswordStrengthBar({ password }) {
   ];
   return (
     <div className="mt-2">
-      <div className="flex gap-1">
+      <div className="flex gap-2">
         {Array.from({ length: 5 }).map((_, i) => (
           <div
             key={i}
             className={clsx(
-              'h-1.5 flex-1 rounded-full transition-colors',
+              'h-2.5 flex-1 rounded-full transition-colors',
               i < score ? colors[score] : 'bg-gray-300 dark:bg-gray-700'
             )}
           />
@@ -37,7 +37,7 @@ export default function PasswordStrengthBar({ password }) {
       </div>
       <p
         className={clsx(
-          'mt-1 text-[10px] tracking-wide font-medium',
+          'mt-1 text-xs font-medium',
           score <= 1 && 'text-red-600 dark:text-red-400',
           score === 2 && 'text-yellow-600 dark:text-yellow-400',
           score >= 3 && 'text-emerald-600 dark:text-emerald-400'

@@ -5,6 +5,18 @@ import FormField from '@/components/ui/FormField';
 import TextInput from '@/components/ui/TextInput';
 import PasswordStrengthBar from '@/components/ui/PasswordStrengthBar';
 import Button from '@/components/ui/Button';
+import { z } from 'zod';
+
+const signupSchema = z.object({
+  name: z.string().min(2, 'Name required'),
+  email: z.string().email({ message: "Invalid email address" }),
+  password: z.string().min(8, "Password must be at least 8 characters"),
+  confirm: z.string(),
+  agree: z.literal(true, { errorMap: () => ({ message: 'You must accept terms' }) })
+}).refine(data => data.password === data.confirm, {
+  path: ['confirm'],
+  message: "Passwords do not match"
+});
 
 export default function Signup() {
   const navigate = useNavigate();
@@ -24,16 +36,16 @@ export default function Signup() {
   }
 
   function validate() {
-    const e = {};
-    if (!form.name) e.name = 'Name required';
-    if (!form.email) e.email = 'Email required';
-    else if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(form.email)) e.email = 'Invalid email';
-    if (!form.password) e.password = 'Password required';
-    else if (form.password.length < 8) e.password = 'Min 8 characters';
-    if (form.confirm !== form.password) e.confirm = 'Passwords do not match';
-    if (!form.agree) e.agree = 'You must accept terms';
-    setErrors(e);
-    return Object.keys(e).length === 0;
+    try {
+      signupSchema.parse(form);
+      setErrors({});
+      return true;
+    } catch (e) {
+      const fieldErrors = {};
+      if (e.errors) for (const err of e.errors) fieldErrors[err.path[0]] = err.message;
+      setErrors(fieldErrors);
+      return false;
+    }
   }
 
   async function onSubmit(e) {
@@ -56,9 +68,9 @@ export default function Signup() {
       title="Create Your Account"
       subtitle="Join the community—track discoveries, reviews, and lists."
     >
-      <form onSubmit={onSubmit} className="space-y-6">
+      <form onSubmit={onSubmit} className="space-y-8">
         {errors.form && (
-          <div className="rounded-md border border-red-300 bg-red-50 px-3 py-2 text-xs text-red-700 dark:border-red-500 dark:bg-red-900/30 dark:text-red-300">
+          <div className="rounded-md border border-red-300 bg-red-50 px-3 py-3 text-base text-red-700 dark:border-red-500 dark:bg-red-900/30 dark:text-red-300">
             {errors.form}
           </div>
         )}
@@ -101,7 +113,7 @@ export default function Signup() {
             rightIcon={{
               icon: (
                 <svg
-                  className="h-4 w-4"
+                  className="h-5 w-5"
                   fill="none"
                   stroke="currentColor"
                   strokeWidth="1.5"
@@ -145,12 +157,12 @@ export default function Signup() {
         </FormField>
 
         <div className="space-y-2">
-          <label className="flex items-start gap-2 text-xs text-gray-600 dark:text-gray-400">
+          <label className="flex items-start gap-2 text-base text-gray-600 dark:text-gray-400">
             <input
               type="checkbox"
               checked={form.agree}
               onChange={e => update('agree', e.target.checked)}
-              className="mt-0.5 h-4 w-4 rounded border-gray-300 text-emerald-600 focus:ring-emerald-600"
+              className="mt-0.5 h-5 w-5 rounded border-gray-300 text-emerald-600 focus:ring-emerald-600"
             />
             <span>
               I agree to the{' '}
@@ -168,7 +180,7 @@ export default function Signup() {
             </span>
           </label>
           {errors.agree && (
-            <p className="text-[11px] font-medium text-red-600 dark:text-red-400">
+            <p className="text-xs font-medium text-red-600 dark:text-red-400">
               {errors.agree}
             </p>
           )}
@@ -178,11 +190,11 @@ export default function Signup() {
           Create Account
         </Button>
 
-        <p className="text-center text-xs text-gray-600 dark:text-gray-400">
+        <p className="text-center text-lg text-gray-600 dark:text-gray-400 pt-4">
           Already have an account?{' '}
           <Link
             to="/login"
-            className="font-medium text-emerald-600 hover:underline dark:text-emerald-400"
+            className="font-semibold text-emerald-600 hover:underline dark:text-emerald-400"
           >
             Sign In
           </Link>

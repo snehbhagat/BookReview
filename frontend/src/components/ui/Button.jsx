@@ -4,7 +4,7 @@ import clsx from 'clsx';
 export default function Button({
   as: Comp = 'button',
   variant = 'primary',
-  size = 'md',
+  size = 'lg',
   className,
   loading = false,
   disabled,
@@ -12,7 +12,7 @@ export default function Button({
   ...rest
 }) {
   const base =
-    'inline-flex items-center justify-center font-medium rounded-md focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-60 transition';
+    'inline-flex items-center justify-center font-medium rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-60 transition';
   const variants = {
     primary:
       'bg-emerald-600 text-white hover:bg-emerald-700 focus-visible:ring-emerald-600 dark:bg-emerald-500 dark:hover:bg-emerald-400 dark:focus-visible:ring-emerald-400',
@@ -22,9 +22,9 @@ export default function Button({
       'text-emerald-600 hover:bg-emerald-50 focus-visible:ring-emerald-600 dark:text-emerald-300 dark:hover:bg-emerald-900/30'
   };
   const sizes = {
-    sm: 'h-8 px-3 text-xs',
-    md: 'h-10 px-4 text-sm',
-    lg: 'h-12 px-5 text-base'
+    sm: 'h-10 px-4 text-base',
+    md: 'h-12 px-5 text-lg',
+    lg: 'h-14 px-6 text-lg'
   };
 
   return (
@@ -35,7 +35,7 @@ export default function Button({
     >
       {loading && (
         <svg
-          className="mr-2 h-4 w-4 animate-spin"
+          className="mr-2 h-5 w-5 animate-spin"
           viewBox="0 0 24 24"
           fill="none"
         >
