@@ -1,39 +1,31 @@
-import React, { useState } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
-import AuthLayout from '@/layouts/AuthLayout';
+import { login, loginWithGoogle } from '@/api/auth';
+import GoogleSignIn from '@/components/auth/GoogleSignIn';
+import Button from '@/components/ui/Button';
 import FormField from '@/components/ui/FormField';
 import TextInput from '@/components/ui/TextInput';
-import Button from '@/components/ui/Button';
-import { z } from 'zod';
-
-const loginSchema = z.object({
-  email: z.string().email({ message: "Invalid email address" }),
-  password: z.string().min(1, "Password required")
-});
+import { useAuth } from '@/context/AuthContext';
+import AuthLayout from '@/layouts/AuthLayout';
+import { useState } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 
 export default function Login() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { saveAuth } = useAuth();
   const [form, setForm] = useState({ email: '', password: '', remember: true });
   const [errors, setErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
-  const [googleLoading, setGoogleLoading] = useState(false);
 
   function update(field, value) {
     setForm(f => ({ ...f, [field]: value }));
   }
 
   function validate() {
-    try {
-      loginSchema.parse(form);
-      setErrors({});
-      return true;
-    } catch (e) {
-      const fieldErrors = {};
-      if (e.errors) for (const err of e.errors) fieldErrors[err.path[0]] = err.message;
-      setErrors(fieldErrors);
-      return false;
-    }
+    const fieldErrors = {};
+    if (!form.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) fieldErrors.email = 'Valid email required';
+    if (!form.password) fieldErrors.password = 'Password required';
+    setErrors(fieldErrors);
+    return Object.keys(fieldErrors).length === 0;
   }
 
   async function onSubmit(e) {
@@ -41,20 +33,37 @@ export default function Login() {
     if (!validate()) return;
     try {
       setSubmitting(true);
-      // TODO: call your auth API
-      await new Promise(r => setTimeout(r, 900));
+      const { user, token } = await login({ email: form.email.trim().toLowerCase(), password: form.password });
+      saveAuth(user, token);
       const redirect = (location.state && location.state.from) || '/';
       navigate(redirect, { replace: true });
     } catch (err) {
-      setErrors({ form: err.message || 'Login failed' });
+      setErrors({ form: err.response?.data?.error || 'Login failed' });
     } finally {
       setSubmitting(false);
     }
   }
 
-  async function onGoogle() {
-    setGoogleLoading(true);
-    window.location.href = '/api/auth/google'; // Redirect to backend endpoint
+  function onGoogleSuccess(payloadOrString) {
+    // backend accepts either { credential } or raw string
+    let credential = null;
+    if (!payloadOrString) {
+      setErrors({ form: 'Google sign-in failed: missing credential' });
+      return;
+    }
+    if (typeof payloadOrString === 'string') credential = payloadOrString;
+    else if (payloadOrString.credential) credential = payloadOrString.credential;
+    else if (payloadOrString.token) credential = payloadOrString.token;
+    else credential = payloadOrString; // fallback - let backend validate
+
+    loginWithGoogle(credential)
+      .then(({ user, token }) => {
+        saveAuth(user, token);
+        navigate('/', { replace: true });
+      })
+      .catch(err => {
+        setErrors({ form: err.response?.data?.error || 'Google sign-in failed' });
+      });
   }
 
   return (
@@ -134,24 +143,10 @@ export default function Login() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 gap-3">
-          <Button
-            type="button"
-            variant="subtle"
-            className="w-full"
-            loading={googleLoading}
-            onClick={onGoogle}
-          >
-            <span className="flex items-center gap-3 justify-center">
-              <img
-                alt=""
-                src="https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
-                className="h-6 w-6"
-              />
-              Google
-            </span>
-          </Button>
-        </div>
+        <GoogleSignIn
+          onSuccess={onGoogleSuccess}
+          onError={(e) => setErrors({ form: e.message || 'Google auth error' })}
+        />
 
         <p className="text-center text-lg text-gray-600 dark:text-gray-400 pt-4">
           New here?{' '}

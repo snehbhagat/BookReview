@@ -15,9 +15,13 @@ function authRequired(req, res, next) {
 }
 
 async function attachUser(req, res, next) {
-  if (!req.user?.id) return next();
-  req.currentUser = await User.findById(req.user.id).select('-passwordHash');
-  next();
+  try {
+    if (!req.user?.id) return next();
+    req.currentUser = await User.findById(req.user.id).select('-passwordHash');
+    next();
+  } catch (e) {
+    next(e);
+  }
 }
 
 module.exports = { authRequired, attachUser };

@@ -1,25 +1,16 @@
-import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import AuthLayout from '@/layouts/AuthLayout';
-import FormField from '@/components/ui/FormField';
-import TextInput from '@/components/ui/TextInput';
-import PasswordStrengthBar from '@/components/ui/PasswordStrengthBar';
+import { signup } from '@/api/auth';
 import Button from '@/components/ui/Button';
-import { z } from 'zod';
-
-const signupSchema = z.object({
-  name: z.string().min(2, 'Name required'),
-  email: z.string().email({ message: "Invalid email address" }),
-  password: z.string().min(8, "Password must be at least 8 characters"),
-  confirm: z.string(),
-  agree: z.literal(true, { errorMap: () => ({ message: 'You must accept terms' }) })
-}).refine(data => data.password === data.confirm, {
-  path: ['confirm'],
-  message: "Passwords do not match"
-});
+import FormField from '@/components/ui/FormField';
+import PasswordStrengthBar from '@/components/ui/PasswordStrengthBar';
+import TextInput from '@/components/ui/TextInput';
+import { useAuth } from '@/context/AuthContext';
+import AuthLayout from '@/layouts/AuthLayout';
+import { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 
 export default function Signup() {
   const navigate = useNavigate();
+  const { saveAuth } = useAuth();
   const [form, setForm] = useState({
     name: '',
     email: '',
@@ -36,16 +27,20 @@ export default function Signup() {
   }
 
   function validate() {
-    try {
-      signupSchema.parse(form);
-      setErrors({});
-      return true;
-    } catch (e) {
-      const fieldErrors = {};
-      if (e.errors) for (const err of e.errors) fieldErrors[err.path[0]] = err.message;
-      setErrors(fieldErrors);
-      return false;
+    const fieldErrors = {};
+    if (!form.name || form.name.trim().length < 2) fieldErrors.name = 'Name required';
+    if (!form.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) fieldErrors.email = 'Valid email required';
+    if (!form.password) fieldErrors.password = 'Password required';
+    else {
+      if (form.password.length < 8) fieldErrors.password = 'Min 8 chars';
+      if (!/[A-Z]/.test(form.password)) fieldErrors.password = (fieldErrors.password ? fieldErrors.password + '; ' : '') + 'Needs uppercase';
+      if (!/[a-z]/.test(form.password)) fieldErrors.password = (fieldErrors.password ? fieldErrors.password + '; ' : '') + 'Needs lowercase';
+      if (!/[0-9]/.test(form.password)) fieldErrors.password = (fieldErrors.password ? fieldErrors.password + '; ' : '') + 'Needs number';
     }
+    if (form.password !== form.confirm) fieldErrors.confirm = 'Passwords do not match';
+    if (!form.agree) fieldErrors.agree = 'You must accept terms';
+    setErrors(fieldErrors);
+    return Object.keys(fieldErrors).length === 0;
   }
 
   async function onSubmit(e) {
@@ -53,11 +48,26 @@ export default function Signup() {
     if (!validate()) return;
     try {
       setSubmitting(true);
-      // TODO: call real signup API
-      await new Promise(r => setTimeout(r, 1000));
-      navigate('/login', { replace: true });
+      const payload = {
+        name: form.name.trim(),
+        email: form.email.trim().toLowerCase(),
+        password: form.password
+      };
+      const { user, token } = await signup(payload);
+      saveAuth(user, token);
+      navigate('/', { replace: true });
     } catch (err) {
-      setErrors({ form: err.message || 'Registration failed' });
+      const data = err.response?.data;
+      // If backend returned issues array, show first issue message to user
+      let message = data?.error || 'Registration failed';
+      if (data?.issues && Array.isArray(data.issues) && data.issues.length > 0) {
+        message = data.issues.map(i => i.message).join('; ');
+      }
+      setErrors({ form: message });
+      if (process.env.NODE_ENV !== 'production') {
+        // eslint-disable-next-line no-console
+        console.debug('[SIGNUP][CLIENT][ERROR]', err.response?.data || err.message);
+      }
     } finally {
       setSubmitting(false);
     }
@@ -68,9 +78,9 @@ export default function Signup() {
       title="Create Your Account"
       subtitle="Join the community—track discoveries, reviews, and lists."
     >
-      <form onSubmit={onSubmit} className="space-y-8">
+      <form onSubmit={onSubmit} className="space-y-6" noValidate>
         {errors.form && (
-          <div className="rounded-md border border-red-300 bg-red-50 px-3 py-3 text-base text-red-700 dark:border-red-500 dark:bg-red-900/30 dark:text-red-300">
+          <div className="rounded-md border border-red-300 bg-red-50 px-3 py-2 text-xs text-red-700 dark:border-red-500 dark:bg-red-900/30 dark:text-red-300">
             {errors.form}
           </div>
         )}
@@ -101,7 +111,7 @@ export default function Signup() {
           htmlFor="password"
           error={errors.password}
           required
-          hint="Use at least 8 characters, mixing letters, numbers & symbols."
+          hint="Min 8 chars incl Upper, lower, number"
         >
           <TextInput
             id="password"
@@ -113,7 +123,7 @@ export default function Signup() {
             rightIcon={{
               icon: (
                 <svg
-                  className="h-5 w-5"
+                  className="h-4 w-4"
                   fill="none"
                   stroke="currentColor"
                   strokeWidth="1.5"
@@ -157,12 +167,12 @@ export default function Signup() {
         </FormField>
 
         <div className="space-y-2">
-          <label className="flex items-start gap-2 text-base text-gray-600 dark:text-gray-400">
+          <label className="flex items-start gap-2 text-xs text-gray-600 dark:text-gray-400">
             <input
               type="checkbox"
               checked={form.agree}
               onChange={e => update('agree', e.target.checked)}
-              className="mt-0.5 h-5 w-5 rounded border-gray-300 text-emerald-600 focus:ring-emerald-600"
+              className="mt-0.5 h-4 w-4 rounded border-gray-300 text-emerald-600 focus:ring-emerald-600"
             />
             <span>
               I agree to the{' '}
@@ -180,7 +190,7 @@ export default function Signup() {
             </span>
           </label>
           {errors.agree && (
-            <p className="text-xs font-medium text-red-600 dark:text-red-400">
+            <p className="text-[11px] font-medium text-red-600 dark:text-red-400">
               {errors.agree}
             </p>
           )}
@@ -190,11 +200,11 @@ export default function Signup() {
           Create Account
         </Button>
 
-        <p className="text-center text-lg text-gray-600 dark:text-gray-400 pt-4">
+        <p className="text-center text-xs text-gray-600 dark:text-gray-400">
           Already have an account?{' '}
           <Link
             to="/login"
-            className="font-semibold text-emerald-600 hover:underline dark:text-emerald-400"
+            className="font-medium text-emerald-600 hover:underline dark:text-emerald-400"
           >
             Sign In
           </Link>

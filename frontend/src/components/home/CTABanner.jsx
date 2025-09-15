@@ -1,4 +1,3 @@
-import React from 'react';
 import { Link } from 'react-router-dom';
 
 export default function CTABanner() {
@@ -14,7 +13,7 @@ export default function CTABanner() {
           </p>
           <div className="mt-6 flex flex-wrap gap-4">
             <Link
-              to="/register"
+              to="/signup"
               className="rounded-md bg-emerald-600 px-6 py-2 text-sm font-medium text-white shadow hover:bg-emerald-700"
             >
               Create Free Account
